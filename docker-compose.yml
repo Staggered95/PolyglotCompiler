@@ -1,0 +1,10 @@
+services:
+    api:
+      build:
+        context: .
+        dockerfile: ./containers/api/Dockerfile
+      ports:
+        - "8080:8080"
+      volumes:
+        - "./workspaces:/app/workspaces"
+        - "/var/run/docker.sock:/var/run/docker.sock"
