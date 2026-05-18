@@ -8,3 +8,5 @@ services:
       volumes:
         - "./workspaces:/app/workspaces"
         - "/var/run/docker.sock:/var/run/docker.sock"
+      environment:
+        - HOST_WORKSPACE_PATH=${PWD}/workspaces

@@ -7,13 +7,34 @@ app.use(express.json());
 const types = ['js', 'ts', 'py'];
 const pairs: Record<string, string> = { 'js': 'nodejs', 'ts': 'nodejs', 'py': 'python' };
 
-const compile = (file_name: string, language: string, type: string): Promise<{exitCode: number | null, stdout:string, stderr: string}> => {
-    return new Promise((resolve, reject) => {
-        const docker = spawn('docker', ['run', '--rm', '-v', '/app/workspaces:/app/workspaces', `polyglot-${type}:latest`, language, `/app/workspaces/${file_name}`]);
+const compile = (file_name: string, language: string, type: string): Promise<{exitCode: number | null, stdout: string, stderr: string}> => {
+    return new Promise((resolve) => {
+        const hostPath = process.env.HOST_WORKSPACE_PATH;
+        
+        const docker = spawn('docker', [
+            'run', '--rm', 
+            '--memory=256m', 
+            '--cpus=0.5', 
+            '-v', `${hostPath}:/app/workspaces`, 
+            `polyglot-${type}:latest`, 
+            language, 
+            `/app/workspaces/${file_name}`
+        ]);
+        
         let output = "";
         let errorOutput = "";
 
+        const timeout = setTimeout(() => {
+            docker.kill(); 
+            resolve({
+                exitCode: 124, 
+                stdout: output,
+                stderr: "Execution Error: Time Limit Exceeded (5 seconds)."
+            });
+        }, 5000);
+
         docker.on('error', (err) => {
+            clearTimeout(timeout);
             console.error("Spawn Error:", err);
             resolve({
                 exitCode: -1,
@@ -30,13 +51,16 @@ const compile = (file_name: string, language: string, type: string): Promise<{ex
             errorOutput += data.toString();
         });
 
-        //when the container dies, resolve the promise
         docker.on('close', (code) => {
-            resolve({
-                exitCode: code,
-                stdout: output,
-                stderr: errorOutput
-            });
+            clearTimeout(timeout); 
+            
+            if (code !== null) {
+                resolve({
+                    exitCode: code,
+                    stdout: output,
+                    stderr: errorOutput
+                });
+            }
         });
     });
 };

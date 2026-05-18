@@ -27,7 +27,7 @@ test() {
     echo "containers booted up. proceeding with tests";
     
     read -p "Enter filename (no need of extension): " file_name;
-    echo -e "Select language (0-1): \n 0) Python \n 1)Nodejs";
+    echo -e "Select language (0-1): \n 0) Python \n 1) Nodejs";
     read -p "Choice: " language;
     case $language in
         0) extension="py" ;;
@@ -56,6 +56,26 @@ test() {
     (  docker compose down -v);
 }
 
+logs() {
+    echo "Tailing API logs... (Press Ctrl+C to exit)"
+    
+    # GREP_COLORS='mt=01;31' forces the matched words to be bold red
+    docker compose logs -f | GREP_COLORS='mt=01;31' grep --color=always -E 'ERROR|CRITICAL|$'
+}
+
+clean() {
+    echo "1/3: Stopping and removing containers/networks..."
+    docker compose down -v
+
+    echo "2/3: Removing custom Docker images..."
+    docker rmi -f $(docker images -q 'polyglot*') 2>/dev/null
+    
+    echo "3/3: Emptying workspaces folder..."
+    rm -f ./workspaces/*
+    
+    echo "Environment successfully cleaned!"
+}
+
 case $1 in
     "setup")
         setup
@@ -66,7 +86,13 @@ case $1 in
     "test")
         test
         ;;
+    "clean")
+        clean
+        ;;
+    "logs")
+        logs
+        ;;
     *)
-        echo -e "Invalid Arguement. Use either: \n setup \n build \n test";
+        echo -e "Invalid Argument. Use: \n setup \n build \n test \n clean \n logs"
         ;;
 esac
