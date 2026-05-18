@@ -1,4 +1,5 @@
 FROM node:18-alpine
+RUN apk add --no-cache docker-cli
 
 WORKDIR /app
 
@@ -8,6 +9,6 @@ COPY . .
 
 RUN npm run build
 
-EXPOSE 8080
+EXPOSE 5000
 
 CMD ["node", "dist/runner.js"]

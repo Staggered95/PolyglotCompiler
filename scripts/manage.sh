@@ -12,15 +12,15 @@ setup() {
 
 build() {
     HASH=$(git rev-parse --short HEAD);
-    (cd .. && docker build -f ./containers/api/Dockerfile -t polyglot-api:$HASH -t polyglot-api:latest . );
-    (cd .. && docker build -f ./containers/python/Dockerfile -t polyglot-py:$HASH -t polyglot-py:latest . );
-    (cd .. && docker build -f ./containers/nodejs/Dockerfile -t polyglot-js:$HASH -t polyglot-js:latest . );
+    (  docker build -f ./containers/api/Dockerfile -t polyglot-api:$HASH -t polyglot-api:latest . );
+    (  docker build -f ./containers/python/Dockerfile -t polyglot-py:$HASH -t polyglot-py:latest . );
+    (  docker build -f ./containers/nodejs/Dockerfile -t polyglot-js:$HASH -t polyglot-js:latest . );
 }
 
 test() {
-    (cd .. && docker compose up -d);
+    docker compose up -d || { echo "Docker Compose failed! Aborting."; exit 1; }
     # wait for containers to boot up
-    while ! curl -s --head --fail localhost:8080/health > /dev/null; do
+    while ! curl -s --head --fail localhost:5000/health > /dev/null; do
         echo "Containers booting up..."
         sleep 1
     done
@@ -42,15 +42,18 @@ test() {
     #if $EDITOR exists, use it, else use nano. need to learn more about this
     ${EDITOR:-nano} "$file";
 
+    # need to learn more about jq
+    JSON_PAYLOAD=$(jq -n --arg t "$extension" --arg c "$(cat $file)" '{type: $t, code: $c}')
+
     if [[ -f "$file" ]]; then
-        curl -X POST -d "{\"type\": \"$extension\", \"code\": \"$(cat $file)\"}" \
+        curl -X POST -d "$JSON_PAYLOAD" \
              -H "Content-Type: application/json" \
-             http://localhost:8080/execute;
+             http://localhost:5000/execute;
     else
         echo "File not found".
     fi
 
-    (cd .. && docker compose down -v);
+    (  docker compose down -v);
 }
 
 case $1 in
