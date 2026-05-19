@@ -84,10 +84,16 @@ const execute = async (req: Request, res: Response) => {
     const result = await compile(file_name, pairs[type], type);
     await fs.unlink(`/app/workspaces/${file_name}`);
 
+    let finalError = result.stderr;
+    if (result.exitCode === 137) {
+        finalError = "Execution Error: Memory Limit Exceeded (256MB).";
+    }
+
     res.json({
-        status: "success",
+        status: result.exitCode === 0 ? "success" : "failed",
+        exitCode: result.exitCode,
         output: result.stdout,
-        error: result.stderr
+        error: finalError
     });
 }
 

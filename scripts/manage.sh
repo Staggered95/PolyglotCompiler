@@ -49,6 +49,7 @@ test() {
         curl -X POST -d "$JSON_PAYLOAD" \
              -H "Content-Type: application/json" \
              http://localhost:5000/execute;
+        rm $file;
     else
         echo "File not found".
     fi
