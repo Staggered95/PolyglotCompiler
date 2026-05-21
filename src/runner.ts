@@ -11,7 +11,8 @@ const pairs: Record<string, string> = { 'js': 'nodejs', 'ts': 'nodejs', 'py': 'p
 const compile = (file_name: string, language: string, type: string): Promise<{exitCode: number | null, stdout: string, stderr: string}> => {
     return new Promise((resolve) => {
         const hostPath = process.env.HOST_WORKSPACE_PATH;
-        
+        console.log(`[INFO] Spawning docker container for ${file_name}...`);
+
         const docker = spawn('docker', [
             'run', '--rm', 
             '--memory=256m', 
@@ -26,6 +27,7 @@ const compile = (file_name: string, language: string, type: string): Promise<{ex
         let errorOutput = "";
 
         const timeout = setTimeout(() => {
+            console.error(`[CRITICAL] Time Limit Exceeded for ${file_name}. Killing container!`);
             docker.kill(); 
             resolve({
                 exitCode: 124, 
@@ -37,6 +39,7 @@ const compile = (file_name: string, language: string, type: string): Promise<{ex
         docker.on('error', (err) => {
             clearTimeout(timeout);
             console.error("Spawn Error:", err);
+            console.error(`[ERROR] Failed to start container for ${file_name}:`, err.message);
             resolve({
                 exitCode: -1,
                 stdout: "",
@@ -74,6 +77,9 @@ const execute = async (req: Request, res: Response) => {
     const randomName = Math.random().toString().substring(2, 9);
     const file_name = `script_${randomName}.${type}`;
 
+    console.log(`[INFO] === New Execution Request ===`);
+    console.log(`[INFO] Language: ${type} | File: ${file_name}`);
+
     try {
         await fs.writeFile(`/app/workspaces/${file_name}`, code);
         console.log("File written successfully");
@@ -88,6 +94,11 @@ const execute = async (req: Request, res: Response) => {
     let finalError = result.stderr;
     if (result.exitCode === 137) {
         finalError = "Execution Error: Memory Limit Exceeded (256MB).";
+        console.error(`[CRITICAL] OOM Killer triggered for ${file_name} (256MB limit reached)`);
+    } else if (result.exitCode !== 0) {
+        console.error(`[ERROR] Execution failed for ${file_name} with code ${result.exitCode}`);
+    } else {
+        console.log(`[SUCCESS] Execution finished cleanly for ${file_name}`);
     }
 
     res.json({
