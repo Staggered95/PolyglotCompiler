@@ -1,0 +1,45 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="index.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/nord.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    
+</head>
+<body>
+    <div class="app-container">
+
+        <header>
+            <h1>Polyglot Compiler</h1>
+            <div class="controls">
+                <select id="language-select">
+                    <option value="py">Python</option>
+                    <option value="js">Javascript</option>
+                </select>
+                <button id="run-button">Execute</button>
+            </div>
+        </header>
+
+        <main class="workspace">
+            <div class="pane">
+                <textarea id="editor" spellcheck="false" placeholder="Write your code here"></textarea>
+            </div>
+            <div class="pane output-pane">
+                <div id="loader" class="loader hidden"></div>
+                <pre id="output">Output will be here...</pre>
+            </div>
+        </main>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

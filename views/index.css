@@ -1,0 +1,124 @@
+:root {
+    --bg-dark: #0f141e;
+    --pane-bg: #1a202c;
+    --frost-blue: #9fb6d6;
+    --accent: #5b7da6;
+    --text-main: #e0e6ed;
+    --border-color: #2d3748;
+    --code-area: #2e3440;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: monospace;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.app-container {
+    width: 90vw;
+    height: 85vh;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: var(--pane-bg);
+    border-bottom: 1px solid var(--border-color);
+}
+
+header h1 {
+    color: var(--frost-blue);
+    font-size: 1.5rem;
+}
+
+select, button {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    border: 1px solid var(--accent);
+}
+
+button:hover {
+    background-color: var(--accent);
+}
+
+.workspace {
+    display: flex;
+    flex-direction: row; 
+    flex: 1; 
+}
+
+.pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column; 
+}
+
+#editor {
+    width: 100%;
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    border: none;
+    border-right: 1px solid var(--border-color);
+    padding: 20px;
+    resize: none;
+    outline: none;
+    font-size: 1.1rem;
+}
+
+.output-pane {
+    background-color: var(--pane-bg);
+    padding: 20px;
+    overflow-y: auto;
+}
+
+#output {
+    white-space: pre-wrap;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.loader {
+    width: 35px;
+    height: 35px;
+    border: 4px solid var(--border-color);
+    border-top: 4px solid var(--frost-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.CodeMirror {
+    flex: 1; 
+    width: 100%;
+    font-size: 1.1rem;
+    background-color: var(--code-area) !important; 
+    border-right: 1px solid var(--border-color);
+}
