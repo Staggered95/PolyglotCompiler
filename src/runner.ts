@@ -2,6 +2,7 @@ import express, {Request, Response} from 'express';
 import fs from 'fs/promises';
 import {spawn} from 'child_process';
 const app = express();
+app.use(express.static('views'));
 app.use(express.json());
 
 const types = ['js', 'ts', 'py'];

@@ -2,8 +2,8 @@
 
 setup() {
     # getting result as 0 if command found. > dont show the output on terminal
-    if ! command -v docker > /dev/null 2>&1 || ! command -v git > /dev/null 2>&1; then
-        echo "docker and git need to be installed first";
+    if ! command -v docker > /dev/null 2>&1 || ! command -v git > /dev/null 2>&1 || ! command -v jq > /dev/null 2>&1; then
+        echo "docker, jq, and git need to be installed first";
         exit 1;
     fi
     docker pull python:3.11-alpine;
@@ -57,6 +57,34 @@ test() {
     (  docker compose down -v);
 }
 
+view() {
+    echo "Booting Polyglot Engine..."
+    docker compose up -d || { echo "Docker Compose failed! Aborting."; exit 1; }
+    
+    # Ping the root URL until the HTML file is successfully served
+    while ! curl -s --head --fail localhost:5000 > /dev/null; do
+        echo "Containers booting up..."
+        sleep 1
+    done
+    
+    echo "Engine is live! Opening workspace..."
+    
+    # Cross-platform browser launch
+    if command -v xdg-open &> /dev/null; then
+        xdg-open http://localhost:5000        # Linux
+    elif command -v open &> /dev/null; then
+        open http://localhost:5000            # macOS
+    elif command -v start &> /dev/null; then
+        start http://localhost:5000           # Windows
+    else
+        echo "========================================="
+        echo "Please manually open your browser to:"
+        # color the line below in green to stand out
+        echo "http://localhost:5000"
+        echo "========================================="
+    fi
+}
+
 logs() {
     echo "Tailing API logs... (Press Ctrl+C to exit)"
     
@@ -92,6 +120,9 @@ case $1 in
         ;;
     "logs")
         logs
+        ;;
+    "view")
+        view
         ;;
     *)
         echo -e "Invalid Argument. Use: \n setup \n build \n test \n clean \n logs"
