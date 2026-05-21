@@ -45,17 +45,32 @@ header {
 
 header h1 {
     color: var(--frost-blue);
-    font-size: 1.5rem;
+    font-size: 1.8rem;
 }
 
 select, button {
     background-color: var(--bg-dark);
     color: var(--text-main);
     border: 1px solid var(--accent);
+    padding: 10px 20px;
+    font-size: 1.2rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button {
+    background-color: var(--frost-blue);
+    color: #0f141e;
+}
+
+select:hover {
+    background-color: var(--accent);
+    color: var(--bg-dark); 
 }
 
 button:hover {
-    background-color: var(--accent);
+    background-color: #3c84e7;
+    color: var(--bg-dark); 
 }
 
 .workspace {
@@ -79,7 +94,7 @@ button:hover {
     padding: 20px;
     resize: none;
     outline: none;
-    font-size: 1.1rem;
+    font-size: 1.3rem;
 }
 
 .output-pane {
@@ -90,6 +105,7 @@ button:hover {
 
 #output {
     white-space: pre-wrap;
+    font-size: 1.2rem;
 }
 
 .hidden {
@@ -118,7 +134,7 @@ button:hover {
 .CodeMirror {
     flex: 1; 
     width: 100%;
-    font-size: 1.1rem;
+    font-size: 1.3rem;
     background-color: var(--code-area) !important; 
     border-right: 1px solid var(--border-color);
 }
