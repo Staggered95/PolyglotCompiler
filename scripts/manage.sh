@@ -9,7 +9,7 @@ show_help() {
     echo -e "${CYAN}Polyglot Engine CLI${NC}"
     echo -e "Usage: ./scripts/manage.sh [command]\n"
     echo -e "Commands:"
-    echo -e "  ${YELLOW}auto${NC}    - Run setup, build, start UI, and attach logs (Recommended)"
+    echo -e "  ${YELLOW}auto${NC}    - Run setup, build, start UI, and attach logs"
     echo -e "  start   - Boot the engine and open the UI in browser"
     echo -e "  test    - Boot the engine and test via terminal/editor"
     echo -e "  build   - Build Docker images"
@@ -17,6 +17,7 @@ show_help() {
     echo -e "  clean   - Destroy all containers, networks, and images"
     echo -e "  logs    - Tail the server logs"
     echo -e "  setup   - Pull base images and check dependencies"
+    echo -e "  ${CYAN}jenkins${NC} - Boot the CI/CD server locally"
     echo -e "  --help, -h - Show this menu"
 }
 
@@ -39,7 +40,6 @@ build() {
     echo -e "You have two choices to run the engine:"
     echo -e "  1. ${CYAN}./scripts/manage.sh start${NC} (Web UI)"
     echo -e "  2. ${CYAN}./scripts/manage.sh test${NC}  (Terminal)"
-    echo -e "\nTip: Run ${YELLOW}./scripts/manage.sh logs${NC} in a split terminal to see live output."
 }
 
 restart() {
@@ -96,10 +96,7 @@ start() {
     elif command -v start &> /dev/null; then
         start http://localhost:5000
     else
-        echo "========================================="
-        echo "Please manually open your browser to:"
         echo -e "${GREEN}http://localhost:5000${NC}"
-        echo "========================================="
     fi
 }
 
@@ -112,6 +109,22 @@ clean() {
     docker compose down -v
     docker rmi -f $(docker images -q 'polyglot*') 2>/dev/null
     rm -f ./workspaces/*
+}
+
+jenkins() {
+    echo -e "${CYAN}Setting up Jenkins CI/CD Server...${NC}"
+    docker build -t polyglot-jenkins ./containers/jenkins/
+
+    if [ "$(docker ps -aq -f name=jenkins)" ]; then
+        echo -e "${YELLOW}Jenkins container found. Restarting...${NC}"
+        docker start jenkins
+    else
+        echo -e "${CYAN}Booting new Jenkins container...${NC}"
+        docker run -d --name jenkins -p 8080:8080 -p 50000:50000 -v /var/run/docker.sock:/var/run/docker.sock -v polyglot_jenkins_data:/var/jenkins_home polyglot-jenkins
+    fi
+
+    echo -e "\n${GREEN}Jenkins is live at http://localhost:8080${NC}"
+    echo -e "To get your initial admin password, run: ${YELLOW}docker logs jenkins${NC}"
 }
 
 auto() {
@@ -129,11 +142,10 @@ case $1 in
     "restart") restart ;;
     "clean") clean ;;
     "logs") logs ;;
+    "jenkins") jenkins ;;
     "auto") auto ;;
     "--help"|"-h") show_help ;;
     *)
-        echo -e "Invalid Argument."
-        echo -e "Run ${YELLOW}./scripts/manage.sh --help${NC} for a list of commands."
-        echo -e "Or just run ${GREEN}./scripts/manage.sh auto${NC} to do everything at once!"
+        echo -e "Invalid Argument. Run ${YELLOW}./scripts/manage.sh --help${NC}"
         ;;
 esac
