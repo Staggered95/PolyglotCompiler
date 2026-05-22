@@ -120,7 +120,7 @@ test() {
     docker compose down -v
 }
 
-start() {
+start_engine() {
     docker compose up -d || { exit 1; }
     
     while ! curl -s --head --fail localhost:5000 > /dev/null 2>&1; do
@@ -168,7 +168,7 @@ jenkins() {
 auto() {
     setup
     build
-    start
+    start_engine
     logs
 }
 
@@ -176,7 +176,7 @@ case $1 in
     "setup") setup ;;
     "build") build ;;
     "test") test ;;
-    "start") start ;;
+    "start") start_engine ;;
     "restart") restart ;;
     "clean") clean ;;
     "logs") logs ;;
