@@ -26,8 +26,10 @@ setup() {
         echo -e "${YELLOW}docker, jq, and git need to be installed first${NC}"
         exit 1
     fi
+    echo -e "${CYAN}Pulling base images...${NC}"
     docker pull python:3.11-alpine
     docker pull node:18-alpine
+    docker pull redis:alpine   
 }
 
 build() {
@@ -54,6 +56,7 @@ restart() {
 
 test() {
     docker compose up -d || { exit 1; }
+    echo -e "${CYAN}Waiting for API to boot...${NC}"
     while ! curl -s --head --fail localhost:5000/health > /dev/null 2>&1; do
         sleep 1
     done
@@ -73,12 +76,47 @@ test() {
     JSON_PAYLOAD=$(jq -n --arg t "$extension" --arg c "$(cat $file)" '{type: $t, code: $c}')
 
     if [[ -f "$file" ]]; then
-        curl -s -X POST -d "$JSON_PAYLOAD" \
+        echo -e "${CYAN}Submitting code to queue...${NC}"
+        
+        # 1. Grab the Job ID from the initial POST request
+        RESPONSE=$(curl -s -X POST -d "$JSON_PAYLOAD" \
              -H "Content-Type: application/json" \
-             http://localhost:5000/execute
+             http://localhost:5000/execute)
+             
+        JOB_ID=$(echo $RESPONSE | jq -r '.jobId')
+        
+        if [ "$JOB_ID" == "null" ] || [ -z "$JOB_ID" ]; then
+            echo -e "${YELLOW}Failed to queue job. Server response: $RESPONSE${NC}"
+        else
+            echo -e "${YELLOW}Job queued (ID: $JOB_ID). Executing in Sandbox...${NC}"
+            
+            # 2. Poll the status endpoint every 1 second
+            while true; do
+                STATUS_RES=$(curl -s http://localhost:5000/status/$JOB_ID)
+                STATE=$(echo $STATUS_RES | jq -r '.state')
+                
+                if [ "$STATE" == "completed" ]; then
+                    RESULT_STATUS=$(echo $STATUS_RES | jq -r '.result.status')
+                    if [ "$RESULT_STATUS" == "success" ]; then
+                        echo -e "\n${GREEN}=== Execution Output ===${NC}"
+                        echo "$STATUS_RES" | jq -r '.result.output'
+                    else
+                        echo -e "\n${YELLOW}=== Execution Error ===${NC}"
+                        echo "$STATUS_RES" | jq -r '.result.error'
+                    fi
+                    break
+                elif [ "$STATE" == "failed" ]; then
+                    echo -e "\n${YELLOW}Server Error: Worker failed to process job.${NC}"
+                    break
+                fi
+                # Sleep for 1 second before asking again
+                sleep 1
+            done
+        fi
         rm "$file"
     fi
 
+    echo -e "\n${CYAN}Tearing down testing environment...${NC}"
     docker compose down -v
 }
 
