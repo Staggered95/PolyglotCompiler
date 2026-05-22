@@ -25,8 +25,6 @@ languageSelect.addEventListener("change", (e) => {
     }
 });
 
-
-
 const runButton = document.getElementById("run-button");
 const outputDisplay = document.getElementById("output");
 const loader = document.getElementById("loader");
@@ -36,11 +34,11 @@ runButton.addEventListener("click", async () => {
     const selectedLang = languageSelect.value;
 
     loader.classList.remove("hidden");
-    outputDisplay.textContent = "Compiling...";
+    outputDisplay.textContent = "Added to Queue...";
     outputDisplay.style.color = "var(--text-main)"; 
 
     try {
-        const response = await fetch("/execute", {
+        const submitRes = await fetch("/execute", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -51,21 +49,41 @@ runButton.addEventListener("click", async () => {
             })
         });
 
-        const data = await response.json();
+        const { jobId } = await submitRes.json();
 
-        if (data.status === "success") {
-            outputDisplay.textContent = data.output || "Program finished with no output.";
-            outputDisplay.style.color = "var(--text-main)";
-        } else {
-            outputDisplay.textContent = data.error || data.stderr || "Unknown execution error.";
-            outputDisplay.style.color = "#ff6b6b"; 
-        }
+        const pollInterval = setInterval(async () => {
+            const statusRes = await fetch(`/status/${jobId}`);
+            const statusData = await statusRes.json();
+
+            if (statusData.state === 'active') {
+                outputDisplay.textContent = "Executing in Sandbox...";
+            }
+
+            if (statusData.state === 'completed') {
+                clearInterval(pollInterval);
+                const result = statusData.result;
+                
+                if (result.status === "success") {
+                    outputDisplay.textContent = result.output || "Program finished with no output.";
+                    outputDisplay.style.color = "var(--text-main)";
+                } else {
+                    outputDisplay.textContent = result.error || "Unknown execution error.";
+                    outputDisplay.style.color = "#ff6b6b"; 
+                }
+                loader.classList.add("hidden");
+            }
+            
+            if (statusData.state === 'failed') {
+                clearInterval(pollInterval);
+                outputDisplay.textContent = "Server Error: Worker failed to process job.";
+                outputDisplay.style.color = "#ff6b6b";
+                loader.classList.add("hidden");
+            }
+        }, 1000); 
 
     } catch (err) {
         outputDisplay.textContent = "Network Error: Could not connect to the API.";
         outputDisplay.style.color = "#ff6b6b";
-        console.error("Fetch Error:", err);
-    } finally {
         loader.classList.add("hidden");
-    }
+    } 
 });

@@ -16,8 +16,10 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "bullmq": "^5.77.0",
     "express": "^5.2.1",
-    "fs": "^0.0.1-security"
+    "fs": "^0.0.1-security",
+    "ioredis": "^5.10.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

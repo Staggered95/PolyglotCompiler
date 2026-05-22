@@ -1,6 +1,7 @@
 import express, {Request, Response} from 'express';
-import fs from 'fs/promises';
 import {spawn} from 'child_process';
+import { executionQueue, setupWorker } from './redis';
+
 const app = express();
 app.use(express.static('views'));
 app.use(express.json());
@@ -32,9 +33,9 @@ const compile = (file_name: string, language: string, type: string): Promise<{ex
             resolve({
                 exitCode: 124, 
                 stdout: output,
-                stderr: "Execution Error: Time Limit Exceeded (5 seconds)."
+                stderr: "Execution Error: Time Limit Exceeded (10 seconds)."
             });
-        }, 5000);
+        }, 10000);
 
         docker.on('error', (err) => {
             clearTimeout(timeout);
@@ -69,51 +70,49 @@ const compile = (file_name: string, language: string, type: string): Promise<{ex
     });
 };
 
+setupWorker(compile);
+
 const execute = async (req: Request, res: Response) => {
     const type = req.body.type;
     const code = req.body.code;
+    
     if (!type || !code) return res.status(500).json({"status": "failed", "message": "Code or Type not provided"});
     if (!types.includes(type)) return res.status(500).json({"status": "failed", "message": "This language is not supported"});
+    
     const randomName = Math.random().toString().substring(2, 9);
     const file_name = `script_${randomName}.${type}`;
 
-    console.log(`[INFO] === New Execution Request ===`);
-    console.log(`[INFO] Language: ${type} | File: ${file_name}`);
+    console.log(`[API] Adding ${file_name} to queue...`);
+    
+    const job = await executionQueue.add('run-code', { type, code, file_name });
+    
+    res.json({ jobId: job.id, status: "queued" });
+};
 
-    try {
-        await fs.writeFile(`/app/workspaces/${file_name}`, code);
-        console.log("File written successfully");
-    } catch (err) {
-        console.error("Error writing file:", err);
-        return res.status(500).json({status: "failed", message: "Server file error"});
+const checkStatus = async (req: Request, res: Response) => {
+    const job = await executionQueue.getJob(req.params.jobId as string);
+    
+    if (!job) {
+        return res.status(404).json({ error: "Job not found" });
     }
 
-    const result = await compile(file_name, pairs[type], type);
-    await fs.unlink(`/app/workspaces/${file_name}`);
-
-    let finalError = result.stderr;
-    if (result.exitCode === 137) {
-        finalError = "Execution Error: Memory Limit Exceeded (256MB).";
-        console.error(`[CRITICAL] OOM Killer triggered for ${file_name} (256MB limit reached)`);
-    } else if (result.exitCode !== 0) {
-        console.error(`[ERROR] Execution failed for ${file_name} with code ${result.exitCode}`);
+    const state = await job.getState();
+    
+    if (state === 'completed') {
+        res.json({ state, result: job.returnvalue });
+    } else if (state === 'failed') {
+        res.json({ state, error: job.failedReason });
     } else {
-        console.log(`[SUCCESS] Execution finished cleanly for ${file_name}`);
+        res.json({ state }); 
     }
-
-    res.json({
-        status: result.exitCode === 0 ? "success" : "failed",
-        exitCode: result.exitCode,
-        output: result.stdout,
-        error: finalError
-    });
-}
+};
 
 const health = (req: Request, res: Response) => {
     res.status(200).json({ status: "success", message: "You have successfully reached the server" });
-}
+};
 
 app.post('/execute', execute);
+app.get('/status/:jobId', checkStatus);
 app.get('/health', health);
 
 app.listen(5000, () => {

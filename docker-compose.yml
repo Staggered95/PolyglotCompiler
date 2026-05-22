@@ -10,3 +10,8 @@ services:
         - "/var/run/docker.sock:/var/run/docker.sock"
       environment:
         - HOST_WORKSPACE_PATH=${PWD}/workspaces
+
+    redis:
+      image: "redis:alpine"
+      ports:
+        - "6379:6379"

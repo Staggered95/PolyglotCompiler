@@ -43,10 +43,12 @@ build() {
 }
 
 restart() {
+    echo -e "${CYAN}Stopping containers...${NC}"
     docker compose down
-    HASH=$(git rev-parse --short HEAD)
-    docker build -f ./containers/api/Dockerfile -t polyglot-api:$HASH -t polyglot-api:latest .
-    docker compose up -d
+    
+    echo -e "${CYAN}Rebuilding and starting containers with fresh code...${NC}"
+    docker compose up -d --build
+    
     echo -e "${GREEN}Engine restarted successfully!${NC}"
 }
 
