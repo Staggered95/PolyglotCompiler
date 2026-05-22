@@ -15,7 +15,7 @@ A secure, containerized remote code execution (RCE) environment. It allows users
 
 ## Prerequisites
 
-Before starting, ensure your system has the following installed:
+Before starting, ensure your system has the following installed
 
 - **Docker & Docker Compose** (The engine relies entirely on containerization)
 - **Git**
